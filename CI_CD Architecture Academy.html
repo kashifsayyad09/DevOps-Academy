@@ -1,0 +1,393 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>CI/CD Architecture Academy</title>
+<style>
+:root{--bg:#fff;--fg:#282828;--mut:#626260;--line:#b3b3af;--card:#f2f2f1;--acc:#fa3600;--ok:#168a41;--warn:#b57a00;--bad:#d4231a;--git:#6d3df0;--blue:#1d5fe0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#1b1b1a;--fg:#f0f0ee;--mut:#b3b3af;--line:#4a4a48;--card:#262625;--ok:#3ccf74;--warn:#f0b429;--bad:#ff6b5e;--git:#a98bff;--blue:#6ea0ff}}
+:root[data-theme=dark]{--bg:#1b1b1a;--fg:#f0f0ee;--mut:#b3b3af;--line:#4a4a48;--card:#262625;--ok:#3ccf74;--warn:#f0b429;--bad:#ff6b5e;--git:#a98bff;--blue:#6ea0ff}
+*{box-sizing:border-box}html{scroll-padding-top:70px;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.5 "BT Grotesk","Helvetica Neue",Arial,sans-serif;letter-spacing:-.01em}
+h1,h2,h3{letter-spacing:-.03em;line-height:1.05;margin:0 0 12px}h1{font-size:clamp(34px,6vw,58px);font-weight:700}h2{font-size:clamp(26px,4vw,38px);font-weight:700}h3{font-size:18px;font-weight:600}
+p{margin:0 0 10px;max-width:70ch}code,pre,.mono{font-family:"Geist Mono",ui-monospace,Menlo,monospace;font-size:12.5px}
+header{position:sticky;top:0;z-index:9;background:var(--bg);border-bottom:1.5px solid var(--line);display:flex;gap:12px;align-items:center;padding:10px 16px}
+header b{font-size:17px;white-space:nowrap}nav{display:flex;gap:4px;overflow-x:auto;flex:1}nav a{padding:6px 12px;border-radius:99px;color:var(--fg);text-decoration:none;white-space:nowrap}nav a.on{background:var(--fg);color:var(--bg)}
+section{max-width:1100px;margin:0 auto;padding:56px 16px 8px}
+.card{background:var(--card);border-radius:28px;padding:18px}.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.b{font:inherit;font-weight:600;border:1.5px solid var(--fg);background:var(--bg);color:var(--fg);border-radius:99px;padding:8px 16px;min-height:40px;cursor:pointer;box-shadow:0 4px 0 -1px var(--fg);transition:transform .1s,box-shadow .1s}
+.b:active{transform:translateY(3px);box-shadow:0 1px 0 -1px var(--fg)}.b.p{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 4px 0 -1px #7a1a00}.b[disabled]{opacity:.45}
+.b.on{background:var(--fg);color:var(--bg)}:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}select,input[type=search]{font:inherit;border:1.5px solid var(--fg);border-radius:99px;padding:8px 14px;background:var(--bg);color:var(--fg);min-height:40px}
+.stages{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.chip{border:1.5px solid var(--line);border-radius:99px;padding:5px 12px;font-size:13px;transition:.2s}
+.chip.run{border-color:var(--acc);color:var(--acc);box-shadow:0 0 0 3px #fa360033}.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.bad{border-color:var(--bad);color:var(--bad);font-weight:700}.chip.skip{opacity:.4;text-decoration:line-through}.chip.blk{opacity:.5;border-style:dashed}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.kv div{background:var(--bg);border-radius:16px;padding:8px 12px}.kv small{display:block;color:var(--mut)}
+pre{background:#1f1f1e;color:#f0f0ee;border-radius:20px;padding:14px;overflow:auto;margin:0;max-height:340px;white-space:pre}.log{height:230px}
+.y-k{color:#ffb199}.y-c{color:#8a8a86}.y-s{color:#9be2b0}.sim{display:inline-block;font-size:12px;color:var(--mut);border:1px dashed var(--line);border-radius:99px;padding:2px 10px}
+.scroll{overflow-x:auto}.scroll svg{min-width:760px;width:100%;display:block}
+.env{border:2px solid var(--line);cursor:pointer}.env.sel{border-color:var(--acc)}.pods{display:flex;gap:6px;margin:8px 0}.pod{width:22px;height:22px;border-radius:50%;background:var(--line)}.pod.up{background:var(--ok)}
+.tag{font-size:12px;border-radius:99px;padding:2px 10px;border:1.5px solid currentColor}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+details{background:var(--card);border-radius:20px;padding:12px 16px;margin:8px 0}summary{cursor:pointer;font-weight:600}.mut{color:var(--mut)}
+/* spacing system: 4/8px rhythm, one 1100px column shared by header, modules and sections */
+header{padding:10px max(20px,calc((100% - 1100px)/2 + 20px));gap:16px}
+section{padding:48px 20px 0}
+section>h1,section>h2{margin:0 0 12px;text-wrap:balance}
+section>h1+p,section>h2+p{margin-bottom:20px}
+.row{margin:16px 0;gap:10px}.row>*{margin:0}.row label{display:inline-flex;align-items:center;gap:8px}
+.grid{gap:16px;margin:16px 0}.grid>*{min-width:0}
+.grid[style*="2fr"]{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))!important}
+.card{padding:20px}.card.scroll{padding:16px}.card>:first-child{margin-top:0}.card>:last-child{margin-bottom:0}
+.stages{gap:8px;margin:16px 0}.kv{gap:10px;margin:16px 0}.kv div{padding:10px 14px}
+pre{padding:16px}
+details{padding:14px 18px;margin:10px 0}details[open]>summary{margin-bottom:10px}details>:last-child{margin-bottom:0}details .card{margin:12px 0 0!important}
+table{margin:0}th{font-weight:600}td:first-child,th:first-child{padding-left:0}td:last-child,th:last-child{padding-right:0}
+input[type=search]{flex:1 1 220px;min-width:0;max-width:100%}
+.env h3{margin:10px 0 6px}
+footer{padding:48px 20px 56px!important}
+@media(max-width:640px){header{padding:8px 16px;gap:10px}section{padding:36px 16px 0}#mh{padding:24px 16px 0!important}#mf{padding:32px 16px 48px!important}#mf .b{flex:1}.b{padding:8px 14px}.grid{gap:12px}.card{padding:16px;border-radius:24px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style></head><body>
+<header><b>CI/CD Academy</b><span class="mut" style="white-space:nowrap;font-size:13px">by Syed Kashif Ali</span><nav id="nav"><a href="#sim">Simulator</a><a href="#git">Branches</a><a href="#env">Environments</a><a href="#yaml">YAML</a><a href="#test">Unit tests</a><a href="#gitops">GitOps</a><a href="#fund">Fundamentals</a><a href="#problems">Problems</a><a href="#iq">Interview Q&amp;A</a><a href="#sec">Security</a></nav><button class="b" id="theme" aria-label="Toggle theme">Theme</button></header>
+
+<section id="sim"><h1>Ship a Python app from commit to EKS.</h1>
+<p>Pick a branch, run the pipeline, and watch what GitHub Actions, Amazon ECR, the GitOps repo, Argo CD and EKS each do. <span class="sim">Educational simulation — no real GitHub or AWS calls</span></p>
+<div class="card"><div class="row"><label>Branch <select id="sbranch"><option>feature/login</option><option selected>develop</option><option>release/v1.0</option><option>main</option></select></label>
+<label>Environment <select id="senv"><option value="dev">Dev</option><option value="test">Test/UAT</option><option value="prod">Production</option></select></label>
+<label>Speed <select id="sspeed"><option value=".5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label></div>
+<div class="row"><button class="b p" data-s="start">Start</button><button class="b" data-s="pause">Pause</button><button class="b" data-s="resume">Resume</button><button class="b" data-s="reset">Reset</button><button class="b" data-s="fail" id="failb">Inject failure: off</button><button class="b" data-s="approve">Approve deployment</button><button class="b" data-s="rollback">Rollback</button></div>
+<div class="stages" id="stages"></div><div class="kv" id="dash"></div>
+<div class="row"><b>Execution log</b></div><pre class="log" id="slog" aria-live="polite"></pre></div></section>
+
+<section id="git"><h2>Branches are types, not five fixed branches</h2>
+<p>Many <code>feature/*</code> branches share one CI workflow. Teams may also choose trunk-based development instead.</p>
+<div class="card scroll"><table><tr><th>Branch</th><th>CI</th><th>CD</th><th>Environment</th></tr><tr><td>feature/*</td><td>PR validation</td><td>No</td><td>None</td></tr><tr><td>develop</td><td>Yes</td><td>Automatic</td><td>Dev EKS</td></tr><tr><td>release/*</td><td>Yes</td><td>Controlled promotion</td><td>Test/UAT EKS</td></tr><tr><td>main</td><td>Yes</td><td>Approval required (configured)</td><td>Production EKS</td></tr><tr><td>hotfix/*</td><td>Yes</td><td>Controlled release</td><td>Production after validation</td></tr></table></div>
+<div class="row" id="gbtns"></div>
+<div class="grid" style="grid-template-columns:2fr 1fr"><div class="card scroll"><svg id="gsvg" viewBox="0 0 1000 240" role="img" aria-label="Git branch diagram"></svg></div><div><div class="row"><b>Event log</b> <span class="sim">simulated times</span></div><pre class="log" id="glog"></pre></div></div></section>
+
+<section id="env"><h2>Three AWS accounts, one image digest</h2>
+<p>Environments never copy containers to each other. Promotion changes the desired image digest in that environment's GitOps folder; Argo CD then syncs it.</p>
+<div class="row"><button class="b" data-e="dev">Deploy build to Dev</button><button class="b" data-e="test">Promote to Test/UAT</button><button class="b" data-e="approve">Approve production</button><button class="b p" data-e="prod">Promote to Production</button></div>
+<div class="grid" id="envs"></div><pre id="envd" style="margin-top:14px;max-height:200px"></pre></section>
+
+<section id="yaml"><h2>Workflow YAML viewer</h2><p>Templates only: replace account IDs, regions, secrets and repo names. Reusable workflows (<code>workflow_call</code>) avoid copying YAML per branch; here one CI file uses branch filters and <code>if:</code> conditions.</p>
+<div class="row"><label>Branch <select id="ybranch"><option>feature/login</option><option>develop</option><option>release/v1.0</option><option>main</option><option>hotfix/security</option></select></label><label>Event <select id="yevent"><option>push</option><option>pull_request</option><option>manual promotion</option></select></label><button class="b on" data-y="ci">ci.yml</button><button class="b" data-y="cd">cd.yml</button><button class="b" id="ycopy">Copy YAML</button></div>
+<div class="grid" style="grid-template-columns:2fr 1fr"><pre id="ytxt"></pre><div class="card" id="yjobs"></div></div></section>
+
+<section id="test"><h2>Unit tests gate the pipeline</h2><p>Unit tests check one function in isolation. Integration tests check components together, smoke tests check a deployment is alive, end-to-end tests walk a user journey. Developers run <code>python -m pytest tests/</code> locally; CI re-runs it as a required check.</p>
+<div class="grid"><div><pre>app/calculator.py
+def add(a, b):
+    return a + b
+
+tests/test_calculator.py
+from app.calculator import add
+def test_add():
+    assert add(2, 3) == 5</pre><div class="row"><button class="b p" data-t="pass">Run tests (pass)</button><button class="b" data-t="fail">Simulate failing test</button><button class="b" data-t="reset">Reset</button></div></div><div><pre id="term" style="min-height:150px">$ python -m pytest tests/</pre><div class="stages" id="tstages"></div></div></div></section>
+
+<section id="gitops"><h2>GitOps: Git holds the desired state</h2>
+<div class="grid"><div class="card"><p>GitHub Actions builds and tests, pushes the image to <b>ECR</b>, then commits a new digest to a separate <b>GitOps repo</b>. <b>Argo CD</b> watches that repo and applies Kubernetes manifests (plain YAML, Kustomize or Helm) to <b>EKS</b>. Actions does CI; Argo CD does deployment.</p><p><b>Synced</b>: cluster matches Git. <b>OutOfSync</b>: Git changed or the cluster drifted. <b>Healthy</b>: resources are running and ready. Rollback = revert the Git commit (or <code>kubectl rollout undo</code> for emergencies, then fix Git).</p></div>
+<pre>gitops-repository/
+└── environments/
+    ├── dev/  deployment.yaml, kustomization.yaml
+    ├── test/ deployment.yaml, kustomization.yaml
+    └── prod/ deployment.yaml, kustomization.yaml
+
+# kustomization.yaml (excerpt)
+images:
+  - name: &lt;ACCOUNT&gt;.dkr.ecr.&lt;REGION&gt;.amazonaws.com/myapp
+    digest: sha256:&lt;tested-digest&gt;</pre></div>
+<div class="stages" id="gflow" style="margin-top:14px"></div></section>
+
+<section id="fund"><h2>Fundamentals</h2><div class="grid" id="fcards"></div>
+<h3 style="margin-top:22px">Maven vs Python tooling</h3><div class="row"><button class="b on" data-l="java">Java</button><button class="b" data-l="py">Python</button></div><pre id="lang"></pre></section>
+
+<section id="problems"><h2>DevOps Problems &amp; Solutions</h2><h3>Your 10 questions</h3><div id="qs"></div>
+<h3 style="margin-top:22px">Troubleshooting</h3><div class="row"><input type="search" id="psearch" placeholder="Search symptoms, commands…" aria-label="Search problems"><span id="pcats" class="row"></span></div><div id="plist"></div></section>
+
+<section id="gitflow"><h2>Git branching flow, animated</h2><p>Two developers work in parallel. Each feature branch reaches develop through a pull request, and develop reaches main only through a release.</p><div class="row"><button class="b p" id="gfplay">Play flow</button><button class="b" id="gfpause">Pause</button><button class="b" id="gfres">Resume</button><button class="b" id="gfnext">Next step</button><button class="b" id="gfrep">Replay</button></div><div class="card scroll"><svg id="gf" viewBox="0 0 700 290" role="img" aria-label="Animated git branching flow: feature branches merge into develop, develop into main"></svg></div><p id="gfcap" aria-live="polite" style="margin-top:10px"><b>Press Play flow to start.</b></p><div class="stages" id="gfs"></div></section>
+<section id="iq"><h2>DevOps interview questions</h2><p>100 questions: 50 for freshers and 50 for candidates with about 4 years of experience.</p><div class="row"><input type="search" id="isearch" placeholder="Search questions…" aria-label="Search interview questions"><span class="row" id="ilv"></span></div><div id="ilist"></div></section>
+<section id="sec"><h2>Security &amp; production practice</h2><div class="card"><ul><li>Protect <code>main</code> and <code>develop</code>: required PR reviews and required status checks.</li><li>Use GitHub Environments with required reviewers for production; approval is a configured control, not a property of <code>main</code>.</li><li>Authenticate to AWS with GitHub OIDC and least-privilege IAM roles. No long-lived access keys; no secrets in repo files.</li><li>Scan images, use immutable digests, and build once, promote many. Cross-account ECR access needs repository policies on both sides.</li><li>Use Kubernetes RBAC, private EKS networking, CloudWatch monitoring and a tested rollback path.</li><li>A green CI run never guarantees production deployment.</li></ul></div>
+<h3 style="margin-top:22px">Progress</h3><div class="row" id="prog"></div><button class="b" id="resetall">Reset all simulations</button></section>
+<footer style="text-align:center;padding:40px 16px" class="mut"><p style="margin:0 auto 8px;color:var(--fg);font-weight:600">Created by Syed Kashif Ali</p>All activity on this page is simulated and runs in your browser.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches,d=x=>RM?0:x,rnd=n=>[...Array(n)].map(()=>'0123456789abcdef'[Math.random()*16|0]).join('');
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+/* Fallback when GSAP fails to load: same API subset, no visual tweening */
+if(!window.gsap){const els=t=>typeof t==='string'?$$(t):(t&&t.nodeType?[t]:[...(t||[])]);
+const ap=(t,v)=>els(t).forEach(e=>{for(const k in v){if(k==='attr')for(const a in v.attr)e.setAttribute(a,v.attr[a]);else if(!/^(duration|ease|stagger|onComplete|scale|y|x|repeat|yoyo)$/.test(k))e.style[k]=v[k]}});
+window.gsap={set:ap,to:(t,v)=>{ap(t,v);v.onComplete&&v.onComplete()},fromTo:(t,f,v)=>{ap(t,v);v.onComplete&&v.onComplete()},registerPlugin(){},delayedCall:(s,f)=>setTimeout(f,s*1000),
+timeline(){const T={c:[],t:0,p:false,s:1,call(f,_,t){T.c.push([t,f,0]);return T},pause(){T.p=true},resume(){T.p=false},timeScale(v){T.s=v},kill(){clearInterval(T.i)}};
+T.i=setInterval(()=>{if(T.p)return;T.t+=.05*T.s;for(const c of T.c){if(!c[2]&&c[0]<=T.t){c[2]=1;c[1]();if(T.p)break}}},50);return T}}}
+/* ---------- Simulator ---------- */
+const ST=[['checkout','Checkout'],['setup','Python setup'],['deps','Install deps'],['pytest','pytest'],['sonar','SonarQube gate'],['build','Docker build'],['scan','Image scan'],['ecr','Push to ECR'],['approve','Approval'],['gitops','Update GitOps'],['argo','Argo CD sync'],['pods','Pods healthy']];
+const F5=['checkout','setup','deps','pytest','sonar'],TAIL=['gitops','argo','pods'];
+const CFG={'feature/login':{env:null,trig:'pull_request',run:F5},develop:{env:'dev',trig:'push',run:[...F5,'build','scan','ecr',...TAIL]},'release/v1.0':{env:'test',trig:'push + manual promotion',run:[...F5,...TAIL]},main:{env:'prod',trig:'push + manual promotion',run:[...F5,'approve',...TAIL]}};
+const NAME={dev:'Dev',test:'Test/UAT',prod:'Production'},NS=Object.fromEntries(ST);
+const S={branch:'develop',env:'dev',status:'idle',stage:'-',build:0,sha:'-',img:'-',digest:null,approved:'n/a',gitops:'-',pods:'-',speed:1,failAt:null,waiting:false,dep:{dev:null,test:null,prod:null},prev:{}};
+let tl=null,clock=601;
+const tm=()=>{clock++;return String(clock/60|0).padStart(2,'0')+':'+String(clock%60).padStart(2,'0')};
+function slog(m,c){const l=$('#slog');l.textContent+=`[sim ${tm()}] ${m}\n`;l.scrollTop=l.scrollHeight}
+function paintStages(){const c=CFG[S.branch];$('#stages').innerHTML=ST.map(([i,n])=>`<span class="chip ${c.run.includes(i)?'':'skip'}" id="st-${i}">${n}</span>`).join('')}
+function chip(i,c){const e=$('#st-'+i);if(e){e.className='chip '+c;gsap.fromTo(e,{scale:.9},{scale:1,duration:d(.25)})}}
+function dash(){const e=S.env?NAME[S.env]:'None (PR validation only)',sh=v=>S.dep[v]?S.dep[v].slice(7,15):'-';
+const k=[['Branch',S.branch],['Trigger',CFG[S.branch].trig],['Status',S.status],['Current stage',S.stage],['Build # (sim)',S.build||'-'],['Commit SHA (sim)',S.sha],['Image tag',S.img],['Digest',S.digest?S.digest.slice(0,15)+'…':'-'],['Environment',e],['Approval',S.approved],['GitOps / Argo',S.gitops],['Pod health',S.pods]];
+$('#dash').innerHTML=k.map(([a,b])=>`<div><small>${a}</small>${b}</div>`).join('')}
+function selectBranch(b){S.branch=b;S.env=CFG[b].env||S.env;if(CFG[b].env)$('#senv').value=CFG[b].env;resetRun();slog(`Selected ${b}. Allowed environment: ${CFG[b].env?NAME[CFG[b].env]:'none'}.`)}
+function resetRun(){if(tl)tl.kill();tl=null;Object.assign(S,{status:'idle',stage:'-',sha:'-',img:'-',digest:null,approved:CFG[S.branch].run.includes('approve')?'Required':'n/a',gitops:'-',pods:'-',waiting:false});paintStages();dash()}
+function block(m){slog('BLOCKED: '+m);gsap.fromTo('#dash',{x:-6},{x:0,duration:d(.4),ease:'elastic.out(1,.3)'})}
+function runStart(){if(S.status==='running'||S.waiting)return;resetRun();const c=CFG[S.branch];let src=null;
+if(S.branch==='release/v1.0'){src=S.dep.dev;if(!src)return block('No tested digest in Dev. Run develop first (build once, promote many).')}
+if(S.branch==='main'){src=S.dep.test;if(!src)return block('No digest validated in Test/UAT. Promote a release first.')}
+S.build++;S.sha=rnd(7);S.img='v1.0.'+S.build;S.digest=src;S.status='running';
+slog(`Run #${S.build} started for ${S.branch} (${c.trig}).`);if(!c.env)slog('Feature branch: validation only — no image publish, no deploy.');
+tl=gsap.timeline();tl.timeScale(S.speed);c.run.forEach((id,i)=>{tl.call(()=>begin(id),null,i);tl.call(()=>end(id),null,i+.85)});dash()}
+const MSG={checkout:'actions/checkout fetched sources',setup:'Python 3.12 ready',deps:'pip install -r requirements.txt',pytest:'python -m pytest tests/ --cov=app',sonar:'SonarQube analysis + quality gate',build:'docker build (image layers cached)',scan:'Image security scan (HIGH/CRITICAL)',ecr:'Pushing versioned image to Amazon ECR',approve:'Waiting for required reviewer…',gitops:'Committing new image digest to GitOps repo',argo:'Argo CD detected change, syncing to EKS',pods:'Waiting for pods to become Ready'};
+const FAILMSG={pytest:'FAILED tests/test_calculator.py::test_add - assert 4 == 5',sonar:'Quality gate FAILED: coverage 62% < 80%',scan:'Scan found CRITICAL CVE; exit code 1'};
+function begin(id){S.stage=NS[id];chip(id,'run');slog(MSG[id]);
+if(id==='approve'){S.waiting=true;S.approved='Pending';tl.pause();S.status='waiting for approval'}
+if(id==='gitops')S.gitops='OutOfSync';if(id==='pods')S.pods='Starting';dash()}
+function end(id){if(S.failAt===id){S.status='failed';S.stage=NS[id]+' (failed)';chip(id,'bad');slog(FAILMSG[id]);slog('Required stage failed — downstream stages blocked; nothing published or deployed.');
+let after=false;CFG[S.branch].run.forEach(x=>{if(after)chip(x,'blk');if(x===id)after=true});tl.kill();tl=null;dash();return}
+chip(id,'ok');if(id==='ecr'){S.digest='sha256:'+rnd(64);S.built=S.digest;slog('Image digest '+S.digest.slice(0,23)+'…')}
+if(id==='argo')S.gitops='Synced';
+if(id==='pods'){deployTo(S.env,S.digest);S.status='success';S.stage='Done';slog(`${NAME[S.env]} healthy on ${S.digest.slice(0,15)}…`);tl=null}
+dash()}
+function approveSim(){if(!S.waiting)return block('No approval is pending. Only a main-branch run reaching the Approval stage can be approved.');S.waiting=false;S.approved='Approved';S.status='running';slog('Reviewer approved production deployment.');chip('approve','ok');tl.resume();dash()}
+function failCycle(){const opts=[null,...['pytest','sonar','scan'].filter(x=>CFG[S.branch].run.includes(x))];S.failAt=opts[(opts.indexOf(S.failAt)+1)%opts.length];$('#failb').textContent='Inject failure: '+(S.failAt||'off')}
+function rollback(){const e=S.env;if(!CFG[S.branch].env)return block('Feature branches deploy nothing, so there is nothing to roll back.');if(!S.prev[e])return block(`No previous version recorded for ${NAME[e]}.`);
+[S.dep[e],S.prev[e]]=[S.prev[e],S.dep[e]];paintEnv(e);slog(`Rolled ${NAME[e]} back to ${S.dep[e].slice(7,15)} (like git revert + Argo sync).`)}
+$('#sbranch').onchange=e=>selectBranch(e.target.value);
+$('#senv').onchange=e=>{const a=CFG[S.branch].env;if(e.target.value!==(a||e.target.value)||!a){block(`${S.branch} may not deploy to ${NAME[e.target.value]}.`);if(a)e.target.value=a}else S.env=e.target.value;dash()};
+$('#sspeed').onchange=e=>{S.speed=+e.target.value;if(tl)tl.timeScale(S.speed)};
+$$('[data-s]').forEach(b=>b.onclick=()=>{const a=b.dataset.s;if(a==='start')runStart();else if(a==='pause'){if(tl&&!S.waiting&&S.status==='running'){tl.pause();S.status='paused';dash()}}
+else if(a==='resume'){if(tl&&!S.waiting&&S.status==='paused'){tl.resume();S.status='running';dash()}}else if(a==='reset'){S.failAt=null;$('#failb').textContent='Inject failure: off';resetRun();$('#slog').textContent='';slog('Simulation reset.')}
+else if(a==='fail')failCycle();else if(a==='approve')approveSim();else rollback()});
+/* ---------- Environments ---------- */
+const ENV={dev:['AWS Account 3','Dev','dev','#168a41','Automatic deploys, dev testing'],test:['AWS Account 2','Test/UAT','test','#1d5fe0','Integration, regression, UAT'],prod:['AWS Account 1','Production','prod','#b57a00','Approvals, HA, rollback, strict IAM']};
+const E={approved:false,sel:'dev'};
+$('#envs').innerHTML=Object.entries(ENV).map(([k,v])=>`<div class="card env" id="env-${k}" tabindex="0" role="button"><span class="tag" style="color:${v[3]}">${v[0]}</span><h3>${v[1]}</h3><div class="mut">VPC · EKS cluster · ns/${v[2]} · ALB Ingress<br>${v[4]}</div><div class="pods">${'<i class="pod"></i>'.repeat(3)}</div><div><b id="ev-${k}">Not deployed</b></div><div class="mono mut" id="eg-${k}">GitOps: idle</div></div>`).join('');
+function paintEnv(k){const dg=S.dep[k];$('#ev-'+k).textContent=dg?'Healthy · '+dg.slice(0,15)+'…':'Not deployed';$$(`#env-${k} .pod`).forEach(p=>p.classList.toggle('up',!!dg));if(!dg)$('#eg-'+k).textContent='GitOps: idle';showEnv()}
+function showEnv(){const k=E.sel,dg=S.dep[k];$$('.env').forEach(e=>e.classList.toggle('sel',e.id==='env-'+k));$('#envd').textContent=`${ENV[k][0]} / ${ENV[k][1]}\nCluster: eks-${k}   Namespace: ${k}\nIAM: deploy role scoped to ${k} only\nDeployed digest: ${dg||'none'}\nPrevious: ${S.prev[k]||'none'}\nSame digest promoted: dev → test → prod`}
+function deployTo(k,dg){S.prev[k]=S.dep[k];S.dep[k]=dg;const pods=$$(`#env-${k} .pod`);pods.forEach(p=>p.classList.remove('up'));
+gsap.fromTo(pods,{scale:0},{scale:1,duration:d(.4),stagger:d(.25),onComplete:()=>paintEnv(k)});pods.forEach((p,i)=>gsap.delayedCall(d(.3+.25*i),()=>p.classList.add('up')));S.pods='3/3 Ready'}
+function promote(k){const src={dev:null,test:'dev',prod:'test'}[k];let dg=src?S.dep[src]:S.built;
+if(!dg)return block(src?`${NAME[src]} has no digest to promote.`:'No built image yet. Run the develop pipeline first.');
+if(k==='prod'&&!E.approved){gsap.fromTo('#env-prod',{x:-8},{x:0,duration:d(.5),ease:'elastic.out(1,.3)'});return block('Production requires approval first.')}
+const tl2=gsap.timeline(),g=$('#eg-'+k);gsap.fromTo('#env-'+k,{scale:.98},{scale:1,duration:d(.4)});
+tl2.call(()=>g.textContent='GitOps: writing digest to environments/'+k,null,0).call(()=>g.textContent='Argo CD: OutOfSync → syncing…',null,.9).call(()=>{deployTo(k,dg);g.textContent='Argo CD: Synced · Healthy';if(k==='prod')E.approved=false;slog(`Promoted ${dg.slice(0,15)}… to ${NAME[k]} (simulated).`)},null,1.8)}
+$$('[data-e]').forEach(b=>b.onclick=()=>{const a=b.dataset.e;if(a==='approve'){E.approved=true;slog('Production approval granted (one deployment).');return}promote(a)});
+$$('.env').forEach(e=>{e.onclick=()=>{E.sel=e.id.slice(4);showEnv()};e.onkeydown=ev=>{if(ev.key==='Enter')e.click()}});
+/* ---------- Git diagram ---------- */
+const L={main:[40,'#6d3df0','main'],hotfix:[80,'#d4231a','hotfix/security'],release:[120,'#b57a00','release/v1.0'],develop:[160,'#1d5fe0','develop'],feature:[205,'#168a41','feature/login']};
+let G,gclock;const gt=()=>{gclock++;return String(gclock/60|0)+':'+String(gclock%60).padStart(2,'0')};
+function glog(m){const l=$('#glog');l.textContent+=`${gt()} — ${m}\n`;l.scrollTop=l.scrollHeight}
+function sv(tag,a,txt){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in a)e.setAttribute(k,a[k]);if(txt)e.textContent=txt;$('#gsvg').appendChild(e);return e}
+function commit(lane,label,from){const x=G.x+=58,[y,c]=L[lane],prev=G.last[lane];
+[prev,from].filter(Boolean).forEach(a=>{const cv=a.lane!==lane,p=sv('path',{d:cv?`M${a.x} ${a.y} C${a.x+30} ${a.y} ${x-30} ${y} ${x} ${y}`:`M${a.x} ${a.y} L${x} ${y}`,fill:'none',stroke:c,'stroke-width':3});
+const n=p.getTotalLength();p.style.strokeDasharray=n;p.style.strokeDashoffset=n;gsap.to(p,{strokeDashoffset:0,duration:d(.6)})});
+const o=sv('circle',{cx:x,cy:y,r:7,fill:'var(--bg)',stroke:c,'stroke-width':3});gsap.fromTo(o,{attr:{r:0}},{attr:{r:7},duration:d(.5)});
+sv('text',{x,y:y-12,'text-anchor':'middle','font-size':10,fill:'var(--fg)'},label);G.last[lane]={lane,x,y};return G.last[lane]}
+function gInit(){$('#gsvg').innerHTML='';gclock=601;G={x:130,last:{},f:{}};
+Object.entries(L).forEach(([k,[y,c,n]])=>{sv('line',{x1:0,x2:1000,y1:y,y2:y,stroke:'var(--line)','stroke-dasharray':'3 5'});sv('text',{x:6,y:y+4,'font-size':11,fill:c,'font-weight':700},n)});
+commit('main','init');commit('develop','dev',G.last.main);$('#glog').textContent=''}
+const need=(c,m)=>{if(!c)glog('Blocked: '+m);return c};
+const GA={'Create Feature Branch':()=>{if(!need(!G.f.feat,'feature/login already exists'))return;G.f.feat=1;commit('feature','branch',G.last.develop);glog('Developer created feature/login')},
+'Commit Code':()=>{if(!need(G.f.feat&&!G.f.merged,'create a feature branch first'))return;G.f.com=1;commit('feature','login');glog('Developer committed changes')},
+'Push to GitHub':()=>{if(!need(G.f.com,'commit first'))return;G.f.push=1;glog('Pushed feature/login to GitHub')},
+'Create Pull Request':()=>{if(!need(G.f.push&&!G.f.pr,'push the branch first'))return;G.f.pr=1;const a=G.last.feature,b=G.last.develop,t=sv('circle',{cx:a.x,cy:a.y,r:6,fill:'#fa3600'});gsap.to(t,{attr:{cx:b.x,cy:b.y},duration:d(.8),onComplete:()=>t.remove()});glog('Pull request opened: feature/login → develop')},
+'Run CI':()=>{if(!need(G.f.pr&&!G.f.ci&&!G.f.run,'open a pull request first'))return;G.f.run=1;['GitHub Actions triggered','pytest passed','SonarQube quality gate passed','PR approved by reviewer'].forEach((m,i)=>gsap.delayedCall(d(i*.7),()=>{glog(m);if(i===3){G.f.ci=1;G.f.run=0}}))},
+'Merge into Develop':()=>{if(!need(G.f.ci&&!G.f.merged,'CI and review must pass first'))return;G.f.merged=1;commit('develop','merge',G.last.feature);glog('Merged into develop; CI builds, scans and pushes the image')},
+'Create Release Branch':()=>{if(!need(G.f.merged&&!G.f.rel,'merge a feature into develop first'))return;G.f.rel=1;commit('release','v1.0',G.last.develop);glog('Created release/v1.0')},
+'Promote to Test':()=>{if(!need(G.f.rel&&!G.f.test,'create a release branch first'))return;G.f.test=1;commit('release','UAT');glog('Same digest promoted to Test/UAT via GitOps')},
+'Approve Production':()=>{if(!need(G.f.test,'Test/UAT must pass first'))return;G.f.appr=1;glog('Production approval granted by required reviewer')},
+'Deploy Production':()=>{if(!need(G.f.appr&&!G.f.prod,'production approval required'))return;G.f.prod=1;commit('main','v1.0',G.last.release);glog('Production GitOps updated; Argo CD synced EKS prod')},
+'Create Hotfix':()=>{if(!need(G.f.prod&&!G.f.hot,'needs a production release on main'))return;G.f.hot=1;commit('hotfix','fix',G.last.main);glog('Created hotfix/security from main');gsap.delayedCall(d(1),()=>{commit('main','hotfix',G.last.hotfix);commit('develop','hotfix',G.last.hotfix);glog('Hotfix validated, merged to main and back into develop')})},
+'Reset Simulation':()=>gInit()};
+$('#gbtns').innerHTML=Object.keys(GA).map(k=>`<button class="b">${k}</button>`).join('');$$('#gbtns .b').forEach(b=>b.onclick=()=>GA[b.textContent]());
+/* ---------- YAML ---------- */
+const Y={ci:`name: ci   # TEMPLATE: replace placeholders before use
+on:
+  push:
+    branches: [develop, 'release/**', main, 'hotfix/**']
+  pull_request:
+    branches: [develop, main]
+permissions: { id-token: write, contents: read }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest tests/ --cov=app --cov-report=xml
+      - uses: SonarSource/sonarqube-scan-action@v5
+        env: { SONAR_TOKEN: §{{ secrets.SONAR_TOKEN }}, SONAR_HOST_URL: §{{ secrets.SONAR_HOST_URL }} }
+      - uses: SonarSource/sonarqube-quality-gate-action@v1
+        timeout-minutes: 5
+        env: { SONAR_TOKEN: §{{ secrets.SONAR_TOKEN }} }
+  publish:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/<GHA_ECR_ROLE>
+          aws-region: <REGION>
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - run: docker build -t §{{ steps.ecr.outputs.registry }}/myapp:§{{ github.sha }} .
+      - uses: aquasecurity/trivy-action@0.28.0
+        with: { image-ref: '§{{ steps.ecr.outputs.registry }}/myapp:§{{ github.sha }}', severity: 'HIGH,CRITICAL', exit-code: '1' }
+      - run: docker push §{{ steps.ecr.outputs.registry }}/myapp:§{{ github.sha }}
+      # then read the digest: aws ecr describe-images --repository-name myapp --image-ids imageTag=§{{ github.sha }}`,
+cd:`name: cd-promote   # TEMPLATE
+on:
+  workflow_dispatch:
+    inputs:
+      environment: { type: choice, options: [dev, test, prod], required: true }
+      digest: { description: 'sha256:... tested digest', required: true }
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: §{{ inputs.environment }}   # prod: configure required reviewers in GitHub Environments
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: <ORG>/gitops-repository
+          token: §{{ secrets.GITOPS_TOKEN }}   # prefer a GitHub App token
+      - run: |
+          cd environments/§{{ inputs.environment }}
+          kustomize edit set image myapp=<ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/myapp@§{{ inputs.digest }}
+          git config user.name ci-bot && git config user.email ci-bot@example.com
+          git commit -am "promote §{{ inputs.digest }} to §{{ inputs.environment }}" && git push
+      # Argo CD watches this repo and syncs EKS. Add post-deploy smoke checks as a later job.`};
+let ytab='ci';
+function jobsFor(b,e){const pr=e==='pull_request',man=e==='manual promotion',tgt=b==='feature/login'||b==='hotfix/security'?b!=='feature/login'?'main':'develop':null;
+if(man)return[['test','skipped','CI does not run on workflow_dispatch'],['cd promote','runs',b==='main'?'Uses the prod environment: waits for required reviewers':'Updates GitOps digest for the chosen environment']];
+if(pr)return tgt||b!=='main'?[['test','runs','Pull request validation'],['publish','skipped','PRs never publish images'],['cd promote','skipped','Manual only']]:[['test','skipped','main is a PR target, not a source']];
+if(b==='feature/login')return[['test','skipped','Not in push branch filter — CI starts when the PR opens']];
+return[['test','runs','Branch matches push filter'],['publish',b==='develop'?'runs':'skipped',b==='develop'?'Condition: push to develop and tests passed':'Digest built on develop is reused (build once, promote many)'],['cd promote','skipped','Manual promotion only']]}
+function yaml(){const raw=Y[ytab].replace(/§/g,'$'),h=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').split('\n').map(l=>l.replace(/(#.*)$/,'<span class="y-c">$1</span>').replace(/^(\s*-?\s*)([\w.-]+):/,'$1<span class="y-k">$2</span>:').replace(/('[^']*')/g,'<span class="y-s">$1</span>')).join('\n');
+$('#ytxt').innerHTML=h;$('#yjobs').innerHTML='<b>Jobs for this trigger</b><table>'+jobsFor($('#ybranch').value,$('#yevent').value).map(j=>`<tr><td>${j[0]}</td><td style="color:var(--${j[1]==='runs'?'ok':'mut'})"><b>${j[1]}</b><br><span class="mut">${j[2]}</span></td></tr>`).join('')+'</table>'}
+$$('[data-y]').forEach(b=>b.onclick=()=>{ytab=b.dataset.y;$$('[data-y]').forEach(x=>x.classList.toggle('on',x===b));yaml()});$('#ybranch').onchange=$('#yevent').onchange=yaml;
+function copy(t,b){const done=()=>{const o=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=o,1200)};
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>fb());else fb();function fb(){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove();done()}}
+$('#ycopy').onclick=e=>copy(Y[ytab].replace(/§/g,'$'),e.target);
+/* ---------- Unit test simulator ---------- */
+const TS=['pytest','SonarQube','Docker build','Push to ECR'];
+function tPaint(st){$('#tstages').innerHTML=TS.map((n,i)=>`<span class="chip ${st[i]||''}">${n}</span>`).join('')}
+function tRun(f){const t=$('#term');t.textContent='$ python -m pytest tests/\n';const lines=f?['collected 1 item','tests/test_calculator.py F        [100%]','E   assert 4 == 5','FAILED tests/test_calculator.py::test_add','1 failed in 0.03s']:['collected 1 item','tests/test_calculator.py .        [100%]','1 passed in 0.02s'];
+tPaint(['run']);lines.forEach((l,i)=>gsap.delayedCall(d(.4*(i+1)),()=>{t.textContent+=l+'\n';if(i===lines.length-1)tPaint(f?['bad','blk','blk','blk']:['ok','ok','ok','ok'])}))}
+$$('[data-t]').forEach(b=>b.onclick=()=>{const a=b.dataset.t;if(a==='reset'){$('#term').textContent='$ python -m pytest tests/';tPaint([])}else tRun(a==='fail')});tPaint([]);
+/* ---------- Content: fundamentals, flow, lang, problems ---------- */
+$('#fcards').innerHTML=[['DevOps','A culture and set of practices where development and operations share ownership and automate delivery. It is not just a subset of Agile; Agile organizes planning, DevOps extends to running software.'],['Continuous Integration','Merge small changes often; every change is built and tested automatically (pytest, quality gates).'],['Continuous Delivery','Every passing change is releasable; a person decides when to release (approval).'],['Continuous Deployment','Every passing change reaches production automatically, with no human gate.'],['CI vs CD','CI proves code is healthy. CD moves a proven artifact through environments.'],['Build once, promote many','Build one image in CI; promote the same digest to Test and Production. Never rebuild per environment.']].map(([a,b])=>`<div class="card"><h3>${a}</h3><p>${b}</p></div>`).join('');
+$('#gflow').innerHTML=['GitHub Actions','GitOps repo','Argo CD','EKS cluster','Deployment','Pods'].map(x=>`<span class="chip" style="border-color:var(--git);color:var(--git)">${x}</span>`).join('<span>→</span>');
+gsap.to('#gflow .chip',{boxShadow:'0 0 0 4px #6d3df044',repeat:RM?0:-1,yoyo:true,stagger:.25,duration:.6});
+const LANG={java:'# Java: Maven manages the whole lifecycle\nmvn clean package        # compile, JUnit, build JAR/WAR\n# files: pom.xml / build.gradle',py:'# Python: pip installs packages; it is not a full Maven equivalent\npython -m pip install -r requirements.txt\npython -m pytest tests/\npython -m pip install build\npython -m build          # wheel + sdist\n# tools: pyproject.toml, Poetry, uv, Hatch, setuptools'};
+function lang(l){$('#lang').textContent=LANG[l];$$('[data-l]').forEach(b=>b.classList.toggle('on',b.dataset.l===l))}$$('[data-l]').forEach(b=>b.onclick=()=>lang(b.dataset.l));lang('java');
+$('#qs').innerHTML=[['Is my original CI/CD architecture correct?','Mostly. It needed GitOps and digest promotion: Actions builds, ECR stores, the GitOps repo holds desired state, Argo CD deploys.'],['What corrections are required?','Add unit tests and scans before push, push to ECR before updating GitOps, use immutable digests, and have Argo CD (not Actions) deploy to EKS.'],['Java uses Maven. What do we use in Python?','pip plus requirements.txt or pyproject.toml; Poetry, uv or Hatch for project management; `python -m build` for wheels.'],['Is unit testing part of CI?','Yes. pytest runs on every push and PR; a failure blocks later required jobs.'],['How does a real pipeline run?','Commit → PR → tests, Sonar → review → merge → build, scan, push → GitOps update → Argo CD sync → health checks.'],['How do we handle GitHub branches?','Feature branches for work, develop for integration, release/* for stabilising, main for production, hotfix/* for urgent fixes. Protect long-lived branches.'],['How many branches run CI/CD?','All branch types can run CI; deployments are limited to develop (Dev), release (Test) and main (Prod). Many feature branches share one workflow.'],['Separate YAML per branch?','No. One workflow with branch filters and `if:` conditions, or reusable workflows via workflow_call.'],['How do branches map to environments?','They are not 1:1 by nature. Mapping is a policy: develop→Dev, release→Test, main→Prod with approval.'],['How do Actions, ECR, GitOps, Argo CD and EKS connect?','Actions pushes the image to ECR and edits the GitOps repo; Argo CD pulls from Git and applies manifests to EKS, which pulls the image from ECR.']].map(([q,a],i)=>`<details><summary>${i+1}. ${q}</summary><p>${a}</p><p class="mut"><b>Interview answer:</b> ${a.split('.')[0]}.</p></details>`).join('');
+const P=[['GitHub','Workflow not triggering','No run in Actions tab','File missing on target branch, branch filter mismatch, invalid YAML','git ls-files .github/workflows','Fix on: filters, commit to the right branch, lint with actionlint','Validate YAML in PRs'],
+['Python','ModuleNotFoundError in CI','Import fails only in CI','Dependency missing from requirements.txt','python -m pip install -r requirements.txt','Add the package, pin versions','Test in a clean venv'],
+['Testing','pytest failure','test job red, FAILED lines','Logic bug, wrong assertion, missing fixture','python -m pytest tests/ -x -vv','Reproduce locally, fix code or test','Run tests pre-commit; require the check'],
+['SonarQube','Quality gate failure','Gate step red; coverage or new issues','Coverage below threshold, new bugs/smells','Open the SonarQube project dashboard','Add tests, fix issues, upload coverage.xml','Fail PRs on the gate'],
+['Docker','Docker build failure','docker build exits non-zero','Bad base image, missing file, failing RUN','docker build --progress=plain -t app:test .','Fix Dockerfile, check .dockerignore','Build in PR validation'],
+['Docker','Vulnerability scan failure','Scan step fails on HIGH/CRITICAL','Vulnerable base image or package','trivy image --severity HIGH,CRITICAL app:test','Upgrade base image/packages','Rebuild regularly, slim images'],
+['AWS IAM','AWS AccessDenied','AccessDenied in aws CLI step','Role lacks the action or resource','aws sts get-caller-identity','Grant least-privilege action on the exact resource','Test roles with IAM policy simulator'],
+['AWS IAM','OIDC AssumeRoleWithWebIdentity fails','Not authorized to perform sts:AssumeRoleWithWebIdentity','Trust policy sub/aud mismatch; missing id-token: write','aws iam get-role --role-name <ROLE>','Match repo/branch/environment in sub, add permission','Use one documented trust-policy template'],
+['ECR','Push denied / cross-account pull denied','denied: not authorized; pods cannot pull','Missing ecr:* push rights or repository policy','aws ecr describe-images --repository-name myapp','Add repository policy for the other account and node role','Test pulls from each account'],
+['EKS','ImagePullBackOff','Pod stuck in ImagePullBackOff','Wrong tag/digest, ECR permissions, wrong region','kubectl describe pod <pod>','Fix image reference or permissions','Deploy digests, not mutable tags'],
+['Kubernetes','CrashLoopBackOff','Restarts climb','App crash, missing env var, bad config','kubectl logs <pod> --previous','Fix config or code, redeploy','Smoke test in Dev first'],
+['Kubernetes','Pods Pending','Pod never schedules','No node capacity, bad requests, taints','kubectl describe pod <pod> && kubectl get nodes','Scale nodes or lower requests','Set sane requests/limits'],
+['Kubernetes','Failed readiness / rollout timeout','Rollout never completes','Probe path wrong, slow startup','kubectl rollout status deploy/myapp -n dev','kubectl rollout undo deploy/myapp -n dev, fix probe','Tune probes, use progressDeadlineSeconds'],
+['Argo CD','OutOfSync or Degraded','App shows OutOfSync / Degraded','Git changed, manual cluster edits, failing resources','kubectl -n argocd get applications','Sync, or fix manifests in Git; avoid manual edits','Enable self-heal where policy allows'],
+['Production','Approval stuck or wrong branch condition','Prod job waits or never runs','Reviewers not configured, if: ref mismatch','Check GitHub Environments settings','Add reviewers, correct github.ref condition','Document release controls']];
+let cat='All',pcats=['All',...new Set(P.map(p=>p[0]))];
+$('#pcats').innerHTML=pcats.map(c=>`<button class="b${c==='All'?' on':''}" data-c="${c}">${c}</button>`).join('');
+function plist(){const q=$('#psearch').value.toLowerCase();const r=P.filter(p=>(cat==='All'||p[0]===cat)&&p.join(' ').toLowerCase().includes(q));
+$('#plist').innerHTML=r.length?r.map(p=>`<details><summary>${p[1]} <span class="tag mut">${p[0]}</span></summary><p><b>Symptoms:</b> ${p[2]}</p><p><b>Possible causes:</b> ${p[3]}</p><p><b>Investigate:</b></p><pre style="max-height:none">${p[4]}</pre><p><b>Solution:</b> ${p[5]}</p><p><b>Prevention:</b> ${p[6]}</p></details>`).join(''):'<p class="mut">No matches. Try another word or choose All.</p>'}
+$$('[data-c]').forEach(b=>b.onclick=()=>{cat=b.dataset.c;$$('[data-c]').forEach(x=>x.classList.toggle('on',x===b));plist()});$('#psearch').oninput=plist;
+/* ---------- Progress, theme, nav, reset ---------- */
+const SECS=['Simulator','Branches','Environments','YAML','Unit tests','GitOps','Fundamentals','Problems','Security'],saved=JSON.parse(store.get('cicd-progress')||'[]');
+$('#prog').innerHTML=SECS.map((s,i)=>`<label><input type="checkbox" data-p="${i}" ${saved.includes(i)?'checked':''}> ${s}</label>`).join('');
+$$('[data-p]').forEach(c=>c.onchange=()=>store.set('cicd-progress',JSON.stringify($$('[data-p]:checked').map(x=>+x.dataset.p))));
+const th=store.get('cicd-theme');if(th)document.documentElement.dataset.theme=th;
+$('#theme').onclick=()=>{const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches,n=dark?'light':'dark';document.documentElement.dataset.theme=n;store.set('cicd-theme',n)};
+$('#resetall').onclick=()=>{S.failAt=null;$('#failb').textContent='Inject failure: off';S.dep={dev:null,test:null,prod:null};S.prev={};S.built=null;E.approved=false;Object.keys(ENV).forEach(paintEnv);resetRun();$('#slog').textContent='';gInit();$('#term').textContent='$ python -m pytest tests/';tPaint([]);gfReset();slog('All simulations reset.')};
+if(window.ScrollTrigger){gsap.registerPlugin(ScrollTrigger);ScrollTrigger.create({trigger:'#gitflow',start:'top 75%',once:true,onEnter:()=>{if(!gf.auto){gf.auto=1;gfPlay()}}})}
+const FR=["What is DevOps?~~A culture and set of practices where development and operations collaborate and automate build, test, release and monitoring to deliver software faster and more reliably.","What is Continuous Integration?~~Developers merge small changes often and every change is built and tested automatically.","Continuous Delivery vs Continuous Deployment?~~Delivery keeps every change releasable with a manual release decision; deployment releases every passing change automatically.","What is Git?~~A distributed version control system that tracks changes and supports branching and collaboration.","Git merge vs rebase?~~Merge keeps history with a merge commit; rebase replays commits onto a new base for linear history. Never rebase shared branches.","What is a pull request?~~A request to merge a branch that enables review and automated checks first.","Name common branching strategies.~~Git Flow (feature, develop, release, hotfix, main), GitHub Flow and trunk-based development.","What is GitHub Actions?~~GitHub CI/CD service that runs workflows defined in YAML under .github/workflows.","Workflow vs job vs step?~~A workflow contains jobs; jobs run on runners in parallel by default; steps are commands or actions inside a job.","How are secrets handled in Actions?~~Stored encrypted in GitHub and injected at runtime; never commit them to the repo.","What is Docker?~~A platform that packages an app and its dependencies into a portable container image.","Image vs container?~~An image is a read-only template; a container is a running instance of it.","What is a Dockerfile?~~A text file of instructions such as FROM, COPY, RUN and CMD used to build an image.","CMD vs ENTRYPOINT?~~ENTRYPOINT defines the executable; CMD supplies default arguments that can be overridden.","What is Amazon ECR?~~An AWS managed registry that stores, scans and serves container images.","What is Kubernetes?~~An orchestrator that schedules, scales and heals containers across a cluster.","What is a Pod?~~The smallest deployable unit: one or more containers sharing network and storage.","Deployment vs ReplicaSet?~~A Deployment manages ReplicaSets and provides rolling updates and rollback; a ReplicaSet keeps a set number of pods running.","What is a Kubernetes Service?~~A stable virtual IP and DNS name that load balances to matching pods.","What is Amazon EKS?~~AWS managed Kubernetes control plane; you provide worker nodes or use Fargate.","What is kubectl?~~The CLI used to talk to the Kubernetes API.","How do you find why a pod fails?~~kubectl get pods, kubectl describe pod and kubectl logs.","What is Infrastructure as Code?~~Managing infrastructure through versioned code, for example Terraform or CloudFormation.","What is Terraform?~~A declarative IaC tool that uses providers and state to create and change infrastructure.","What is GitOps?~~Git holds the desired state and an agent such as Argo CD reconciles clusters to it.","What is Argo CD?~~A Kubernetes controller that watches a Git repo and syncs manifests to clusters.","Synced vs Healthy in Argo CD?~~Synced means the cluster matches Git; Healthy means resources are running and ready.","What is pytest?~~A Python test framework with simple asserts, fixtures and plugins.","Why run unit tests in CI?~~They catch regressions early and block bad code before build and deploy.","Unit vs integration test?~~Unit tests one component in isolation; integration tests components working together.","What is SonarQube?~~A static analysis tool that finds bugs, vulnerabilities and smells and reports coverage against a quality gate.","What is a quality gate?~~A set of pass/fail conditions, such as minimum coverage, that code must meet.","pip vs Maven?~~pip installs Python packages; Maven is a full Java build lifecycle tool. Python uses pip plus pyproject.toml, build and pytest.","What is requirements.txt?~~A file listing pinned Python dependencies for pip install -r.","What is AWS IAM?~~The AWS service that controls who can do what on which resources.","IAM user vs role?~~Users have long-term credentials; roles give temporary credentials to services or federated identities.","What is least privilege?~~Granting only the permissions needed for a task.","What is a VPC?~~An isolated virtual network in AWS with subnets, route tables and gateways.","What does a load balancer do?~~Distributes traffic across targets and checks their health.","Monitoring vs logging?~~Monitoring tracks metrics and alerts; logging records events for diagnosis. CloudWatch covers both on AWS.","What is a rolling update?~~Pods are replaced gradually so the app stays available.","What is rollback?~~Returning to the previous known-good version, for example kubectl rollout undo or reverting a Git commit.","Which Linux commands show disk usage?~~df -h for filesystems and du -sh for directories.","What is YAML?~~A human-readable data format used for pipelines and Kubernetes manifests; indentation matters.","What is a container registry?~~A storage and distribution service for images, such as ECR or Docker Hub.","What is a webhook?~~An HTTP callback sent when an event happens, such as a push that triggers CI.","What is a build artifact?~~Build output such as an image, wheel or JAR that is stored and deployed.","What is a runner?~~The machine that executes workflow jobs, either GitHub-hosted or self-hosted.","Why avoid the latest tag?~~It is mutable so deployments are not reproducible; use version tags or digests.","What is blue-green deployment?~~Two environments run side by side and traffic switches from old to new, allowing instant rollback."],
+EX=["Design a CI/CD pipeline for a Python app on EKS.~~Actions runs pytest, Sonar and image scan, builds once, pushes to ECR, updates a GitOps repo with the digest and Argo CD syncs Dev; the same digest is then promoted to Test and Prod with approval.","Why build once, promote many?~~It guarantees the tested artifact is what runs in production; rebuilding can introduce differences.","Why use digests instead of tags?~~Digests are immutable content hashes; tags can be moved.","Why a separate GitOps repo?~~It separates app code from deploy config, gives clean audit and access control, and avoids CI trigger loops.","Reusable workflows vs composite actions?~~Reusable workflows share whole jobs via workflow_call; composite actions bundle steps inside one job.","How do you avoid duplicate YAML per branch?~~Use branch filters, if conditions and reusable workflows.","How do you secure AWS access from Actions?~~GitHub OIDC with an IAM role whose trust policy is limited to the repo, branch or environment; no static keys.","How do you debug AssumeRoleWithWebIdentity failures?~~Check id-token: write permission, the sub and aud conditions in the trust policy, and that the OIDC provider exists in the account.","How are production approvals implemented?~~GitHub Environments with required reviewers and branch restrictions; approval is configured, not an automatic property of main.","Which branch protection rules do you set?~~Require PRs, reviews, status checks and up-to-date branches, and block force pushes.","Git Flow vs trunk-based development?~~Git Flow suits scheduled releases; trunk-based with feature flags suits frequent deploys and less merge pain.","How do you speed up slow pipelines?~~Cache dependencies and Docker layers, run jobs in parallel, use path filters, split tests and shrink images.","How do you handle flaky tests?~~Quarantine and track them, fix root causes such as shared state or timing, and avoid blind retries.","Why use multi-stage Docker builds?~~Build in a full image and copy only artifacts into a slim runtime image for smaller, safer images.","How do you harden container images?~~Minimal base, non-root user, pinned versions, scanning, no secrets and a read-only filesystem.","How does cross-account ECR pull work?~~A repository policy allows the other account, and the node or pod role has ecr:GetAuthorizationToken and image pull actions.","What causes ImagePullBackOff?~~Wrong tag or digest, missing permissions, wrong region or unreachable registry; read kubectl describe pod events.","How do you investigate CrashLoopBackOff?~~kubectl logs --previous, then check config, env vars, probes, limits and exit codes.","Why are pods Pending?~~Insufficient resources, taints, node selectors or PVC issues; describe the pod events.","Liveness vs readiness vs startup probes?~~Liveness restarts a container, readiness gates traffic and startup protects slow starters.","Requests vs limits?~~Requests drive scheduling; limits cap usage and can cause CPU throttling or OOMKill.","How do you get zero-downtime deployments?~~Rolling updates with readiness probes, PodDisruptionBudgets, tuned maxUnavailable and graceful shutdown.","Canary vs blue-green?~~Canary shifts a small share of traffic gradually; blue-green switches all traffic between two stacks.","HPA vs Cluster Autoscaler?~~HPA scales pods on metrics; Cluster Autoscaler or Karpenter adds nodes for unschedulable pods.","Helm vs Kustomize?~~Helm templates with values and releases; Kustomize overlays plain YAML without templating.","What makes Argo CD show OutOfSync?~~Git changed, manual cluster edits, drift or generated fields; inspect the diff and consider self-heal.","What are Argo CD sync waves and hooks?~~They order resources and run jobs before or after sync, such as database migrations.","How do you roll back with Argo CD?~~Revert the Git commit so Git stays the source of truth; a UI rollback is temporary when auto-sync is on.","How do you manage secrets in GitOps?~~External Secrets, Sealed Secrets or SOPS; never plain secrets in Git.","How does Argo CD handle multiple clusters?~~Register the clusters and use ApplicationSets to generate one app per environment.","How do you manage Terraform state?~~Remote backend such as S3 with locking and encryption, separated per environment.","Terraform vs CloudFormation?~~Terraform is multi-cloud with many providers; CloudFormation is AWS native with managed state.","How do you prevent infrastructure drift?~~Change everything through IaC, restrict console edits and run scheduled plans or drift detection.","What is a good multi-account AWS strategy?~~Separate accounts per environment under Organizations with SCPs, central logging and role assumption.","What are the EKS networking basics?~~VPC CNI gives pods VPC IPs, so plan subnet size; use security groups, network policies and private endpoints.","IRSA vs EKS Pod Identity?~~Both give pods IAM roles without node-wide credentials; IRSA uses OIDC, Pod Identity is simpler to manage.","How does Kubernetes RBAC work?~~Roles and bindings grant API permissions; apply least privilege per namespace and map IAM identities to RBAC.","How do you secure the software supply chain?~~Pin dependencies, scan images, sign with cosign, generate SBOMs and restrict who can push.","What is shift-left security?~~Running SAST, dependency and secret scanning in PRs before merge.","The Sonar gate fails on coverage. What now?~~Add tests, make sure coverage.xml reaches Sonar, and do not lower thresholds just to pass.","What are the observability pillars?~~Metrics, logs and traces, with SLOs and alerts on user-facing symptoms.","SLI vs SLO vs SLA?~~An SLI measures, an SLO is the target and an SLA is a contractual promise.","What is an error budget?~~The unreliability the SLO allows; spend it on releases and freeze changes when it is exhausted.","What are the DORA metrics?~~Deployment frequency, lead time for changes, change failure rate and time to restore service.","What are the incident response steps?~~Detect, triage, mitigate or roll back, communicate, then run a blameless postmortem.","How do you run database migrations in CD?~~Use backward-compatible expand-contract migrations run as controlled jobs, separate from the app rollout.","Why use feature flags?~~They decouple deploy from release, enabling gradual rollout and quick disable.","How do you reduce cloud cost?~~Right-size, autoscale, use spot for tolerant workloads, add lifecycle rules for ECR and logs, and tag for visibility.","How do you plan disaster recovery on AWS?~~Define RPO and RTO, then use backups, multi-AZ, cross-region replication, tested runbooks and IaC rebuilds.","Self-hosted vs GitHub-hosted runners?~~Hosted are simple and ephemeral; self-hosted give private network access and control but need hardening and patching."];
+const DET={
+F0:"DevOps joins planning, coding, testing, release and operations into one feedback loop.<br><b>Pillars:</b> culture (shared ownership), automation (CI/CD, IaC), measurement (metrics, logs, DORA) and sharing (blameless reviews).<br><b>Example:</b> a developer pushes code, Actions tests it, an image goes to ECR, Argo CD deploys it, CloudWatch alerts if it breaks, and the lessons feed the next sprint.<br><b>Common mistake:</b> treating DevOps as a job title or a tool. It is also not just part of Agile: Agile shapes how teams plan work, DevOps extends that to running it reliably.",
+F2:"<b>Continuous Delivery:</b> every change that passes the pipeline is releasable; a person or approval decides when it goes to production.<br><b>Continuous Deployment:</b> no human gate; passing changes deploy automatically.<br><b>Example:</b> Dev deploys automatically on merge to develop, while Production waits for a GitHub Environment reviewer. That is delivery. If prod also deployed on its own, it would be deployment.<br><b>Trade-off:</b> deployment needs strong tests, monitoring and fast rollback. Regulated companies often stay with delivery.",
+F4:"<b>Merge</b> joins two histories with a merge commit and preserves what actually happened. <b>Rebase</b> moves your commits onto the tip of another branch, giving a straight history but rewriting commit IDs.<br><code>git merge develop</code> versus <code>git rebase develop</code><br><b>Rule:</b> rebase only your own unpublished feature branches; never rebase shared branches like develop or main. After rebasing a pushed branch you need <code>git push --force-with-lease</code>, which is risky on shared work.<br><b>Team practice:</b> many teams squash-merge PRs to keep main readable.",
+F11:"An image is an immutable, layered template built from a Dockerfile. A container is a running process created from an image with a writable layer on top.<br>One image can start many containers, and deleting a container does not delete the image.<br><code>docker build -t myapp:1.0 .</code><br><code>docker run -d --name web myapp:1.0</code><br><b>In our pipeline:</b> CI builds one image, ECR stores it, and EKS pods run containers from it, referenced by digest.",
+F17:"A ReplicaSet only ensures N identical pods exist. A Deployment owns ReplicaSets and adds declarative updates, a rolling strategy and history.<br>On an image change the Deployment creates a new ReplicaSet, scales it up while scaling the old one down, and keeps old ReplicaSets for rollback.<br><code>kubectl rollout status deploy/myapp</code><br><code>kubectl rollout undo deploy/myapp</code><br>You normally write Deployments, not ReplicaSets.",
+F24:"GitOps uses Git as the single source of truth for desired state. An agent in the cluster (Argo CD) pulls it and reconciles reality to match.<br><b>Flow:</b> CI pushes the image to ECR, commits the new digest to the GitOps repo, Argo CD detects the change and syncs EKS.<br><b>Benefits:</b> audit trail through commits, easy rollback by reverting, no cluster credentials in CI, drift detection.<br><b>Mistake:</b> editing the cluster by hand; Argo CD will show OutOfSync or overwrite it.",
+F26:"These are two independent checks in Argo CD.<br><b>Sync status</b> compares Git to the cluster: Synced or OutOfSync.<br><b>Health status</b> reflects runtime state: Healthy, Progressing, Degraded or Missing.<br>You can be Synced but Degraded (manifests applied, pods crash) or OutOfSync but Healthy (app runs, Git has a newer commit).<br>Investigate Degraded with <code>kubectl describe</code> and <code>kubectl logs</code>, and OutOfSync with the Argo CD diff.",
+F29:"<b>Unit test:</b> one function or class, dependencies mocked, runs in milliseconds on every push. Example: <code>assert add(2, 3) == 5</code>.<br><b>Integration test:</b> several parts together, such as the API with a real database; slower, run in CI with services or in Test.<br><b>Smoke test:</b> a quick check that a deployment is alive. <b>End-to-end test:</b> a full user journey.<br>The test pyramid: many unit tests, fewer integration tests, very few end-to-end tests.",
+F35:"An IAM user has long-lived credentials (password or access keys). A role has no permanent credentials; a trusted identity assumes it and receives temporary credentials from STS.<br>Roles are preferred for services and CI: GitHub Actions assumes a role through OIDC, and EKS pods use IRSA or Pod Identity.<br><b>Check who you are:</b> <code>aws sts get-caller-identity</code><br><b>Mistake:</b> storing access keys in GitHub secrets when OIDC is available.",
+F48:"The latest tag is mutable: it can point to different images over time, so two nodes may run different code and the rollback target is unclear.<br><b>Better:</b> version tags such as 1.4.2 or the commit SHA, and in GitOps manifests the immutable digest <code>myapp@sha256:...</code>.<br>Enable ECR tag immutability so a tag cannot be overwritten.",
+E0:"<b>1 Trigger:</b> PRs run validation; pushes to develop, release/* and main run CI.<br><b>2 CI:</b> checkout, Python setup, <code>pip install</code>, pytest with coverage, SonarQube quality gate.<br><b>3 Build:</b> Docker build, image scan, push to ECR from develop only, capture the digest.<br><b>4 GitOps:</b> update the Dev folder with the digest.<br><b>5 Deploy:</b> Argo CD syncs Dev EKS; smoke tests run.<br><b>6 Promote:</b> same digest to Test, then Production after approval.<br><b>7 Verify:</b> health checks, CloudWatch alarms, rollback plan.<br>Auth uses GitHub OIDC, and nothing is rebuilt per environment.",
+E1:"Rebuilding for each environment produces different artifacts even from the same commit (new base image layers, dependency updates), so what you tested is not what you ship.<br><b>Practice:</b> build once on develop, record the digest, and promote by editing the GitOps config for Test and Prod. Environment differences live in config (ConfigMaps, Kustomize overlays), not in the image.<br><b>Evidence:</b> compare digests across environments in Argo CD or with <code>kubectl get deploy -o jsonpath</code>.",
+E6:"<b>Why:</b> static keys leak and rotate poorly. OIDC gives short-lived credentials.<br><b>Setup:</b> create the GitHub OIDC provider in IAM, create a role whose trust policy allows <code>sts:AssumeRoleWithWebIdentity</code> with conditions on <code>aud</code> and <code>sub</code> (for example a specific repo and branch or environment), and attach least-privilege policies such as ECR push.<br><b>Workflow:</b> set <code>permissions: id-token: write</code> and use <code>aws-actions/configure-aws-credentials</code> with <code>role-to-assume</code>.<br>Use separate roles per account and environment.",
+E7:"<b>Symptom:</b> Not authorized to perform sts:AssumeRoleWithWebIdentity.<br><b>Check in order:</b><br>1. The workflow has <code>id-token: write</code>.<br>2. The OIDC provider exists in that AWS account.<br>3. The trust policy <code>sub</code> matches the real repo, branch or environment string exactly (jobs using an environment send the environment name, not the branch).<br>4. <code>aud</code> is sts.amazonaws.com.<br>5. Role ARN and account ID are right.<br><code>aws iam get-role --role-name ROLE --query Role.AssumeRolePolicyDocument</code><br>Never print tokens when debugging.",
+E15:"<b>Scenario:</b> images live in one account; EKS in the Test and Prod accounts pulls them.<br><b>Both sides are needed:</b><br>1. A repository policy in the registry account allowing the other account (or its node role) <code>ecr:BatchGetImage</code>, <code>ecr:GetDownloadUrlForLayer</code> and <code>ecr:BatchCheckLayerAvailability</code>.<br>2. The pulling role needs <code>ecr:GetAuthorizationToken</code> and pull permissions in its own IAM policy.<br>3. The image URL must use the registry account ID.<br><b>Verify:</b> <code>aws ecr get-repository-policy --repository-name myapp</code> and the events in <code>kubectl describe pod</code>.",
+E16:"<b>Meaning:</b> the kubelet failed to pull the image and is backing off between retries.<br><b>Investigate:</b> <code>kubectl describe pod NAME</code> and read Events.<br><b>Causes:</b> typo in tag or digest, image not in that region, node role lacks ECR permission, missing imagePullSecret for private registries, network or VPC endpoint blocked.<br><b>Verify the image:</b> <code>aws ecr describe-images --repository-name myapp</code><br><b>Fix:</b> correct the reference in GitOps and let Argo CD resync. Prevent with digests and a post-push check.",
+E17:"<b>Meaning:</b> the container starts, exits, and Kubernetes keeps restarting it with growing delays.<br><b>Steps:</b><br>1. <code>kubectl get pods</code> to see restart counts.<br>2. <code>kubectl logs POD --previous</code> for the crashed run.<br>3. <code>kubectl describe pod POD</code> for the exit code (137 usually means OOMKilled), probe failures and events.<br>4. Check env vars, ConfigMaps, Secrets, database reachability and limits.<br><b>Fix and prevent:</b> correct config or code, raise memory if OOM, and test in Dev before promotion.",
+E19:"<b>Liveness:</b> is the process stuck? Failure restarts the container.<br><b>Readiness:</b> can it serve traffic? Failure removes the pod from Service endpoints without restarting.<br><b>Startup:</b> gives slow apps time before liveness begins.<br><b>Pitfalls:</b> a liveness probe that checks the database can cause restart storms; a readiness path that returns 200 too early sends traffic to a cold app.<br>Rollouts rely on readiness, so a wrong probe causes rollout timeouts.",
+E22:"<b>Blue-green:</b> run old (blue) and new (green) stacks, switch all traffic at once, and roll back by switching back. It briefly needs double capacity.<br><b>Canary:</b> send 5%, then 25%, then 100% of traffic to the new version while watching error rate and latency, and abort if metrics degrade.<br><b>On EKS:</b> Argo Rollouts, a service mesh or ALB weighted routing implements both.<br>Database changes must be backward compatible for either approach.",
+E24:"<b>Helm:</b> packages manifests as templates with values.yaml, versioned charts and release history. Good for third-party apps.<br><b>Kustomize:</b> no templates; a base plus overlays that patch YAML, built into kubectl.<br><b>In our layout:</b> environments/dev, test and prod each hold a kustomization.yaml that sets the image digest and replicas.<br><b>Choose:</b> Kustomize for your own apps with few differences, Helm when you need parameterized, reusable packages. Argo CD supports both.",
+E25:"<b>Meaning:</b> the live cluster state differs from Git.<br><b>Causes:</b> a new commit not yet synced (normal), manual <code>kubectl edit</code> drift, fields mutated by controllers (HPA replicas, injected sidecars), or a failed sync.<br><b>Investigate:</b> the Argo CD diff view or <code>argocd app diff APP</code>.<br><b>Fix:</b> sync, add ignoreDifferences for controller-managed fields, or revert the manual change.<br><b>Prevent:</b> enable self-heal and forbid manual edits.",
+E28:"Plain Kubernetes Secrets are only base64, so they must never be committed.<br><b>Options:</b> External Secrets Operator syncs from AWS Secrets Manager; Sealed Secrets stores encrypted secrets that only the cluster can decrypt; SOPS encrypts files with KMS keys.<br><b>Recommended on AWS:</b> Secrets Manager plus External Secrets with IRSA, so Git only holds references.<br>Also limit RBAC on Secrets and rotate them regularly.",
+E42:"An SLO of 99.9% monthly availability allows about 43 minutes of downtime; that allowance is the error budget.<br><b>Use:</b> while budget remains, ship features; when it is spent, pause risky releases and fix reliability.<br><b>Example:</b> after two bad deployments consume the budget, the team freezes releases and invests in canary rollouts and better tests.<br>It turns reliability into a shared, measurable decision between product and operations.",
+E45:"Code and schema deploy at different moments, so each step must work with both old and new app versions.<br><b>Expand-contract:</b><br>1. Expand: add the new nullable column or table.<br>2. Deploy an app that writes both old and new.<br>3. Backfill data.<br>4. Deploy an app that reads only the new.<br>5. Contract: drop the old column in a later release.<br><b>Run</b> migrations as a controlled job (an Argo CD PreSync hook) with backups, and never rename or drop in the same release."};
+let ilv='All';
+function iqRender(){const q=$('#isearch').value.toLowerCase();let n=0;$('#ilist').innerHTML=[...FR.map((s,i)=>['Fresher',s,'F'+i]),...EX.map((s,i)=>['4 yrs',s,'E'+i])].filter(([l,s])=>(ilv==='All'||l===ilv)&&s.toLowerCase().includes(q)).map(([l,s,k])=>{const[a,b]=s.split('~~');return `<details><summary>${++n}. ${a} <span class="tag mut">${l}</span>${DET[k]?' <span class="tag" style="color:var(--ok)">detailed</span>':''}</summary><p><b>Short answer:</b> ${b}</p>${DET[k]?`<div class="card" style="margin:8px 0"><b>In detail</b><p>${DET[k]}</p></div>`:''}</details>`}).join('')||'<p class="mut">No matches. Try another word.</p>'}
+$('#ilv').innerHTML=['All','Fresher','4 yrs'].map(l=>`<button class="b${l==='All'?' on':''}" data-i="${l}">${l==='4 yrs'?'4 years experience':l}</button>`).join('');
+$$('[data-i]').forEach(b=>b.onclick=()=>{ilv=b.dataset.i;$$('[data-i]').forEach(x=>x.classList.toggle('on',x===b));iqRender()});$('#isearch').oninput=iqRender;
+/* ---------- Animated Git flow (based on the uploaded diagram) ---------- */
+const GL={main:[40,'#16a34a','main','Protected / production'],develop:[110,'#2563eb','develop','Integration branch'],login:[180,'#a855f7','feature/login','Developer work'],payment:[250,'#ea580c','feature/payment','Developer work']};
+const GC={m0:['main',170,'init'],d0:['develop',230,'start'],l0:['login',290,'c1'],l1:['login',350,'c2'],p0:['payment',330,'c1'],p1:['payment',400,'c2'],d1:['develop',420,'PR merge'],d2:['develop',500,'PR merge'],m1:['main',600,'release']};
+const GP={a:['m0','d0','develop'],b:['d0','l0','login'],c:['d0','p0','payment'],e:['l1','d1','login'],f:['p1','d2','payment'],g:['d2','m1','main']};
+const GLN=[['m0','m1','main'],['d0','d1','develop'],['d1','d2','develop'],['l0','l1','login'],['p0','p1','payment']];
+const gf={i:0,tl:null,auto:0};
+function gpath(a,b){const A=GC[a],B=GC[b],ay=GL[A[0]][0],by=GL[B[0]][0];return ay===by?`M${A[1]} ${ay} L${B[1]} ${by}`:`M${A[1]} ${ay} C${A[1]+30} ${ay} ${B[1]-30} ${by} ${B[1]} ${by}`}
+function sg(tag,a,txt){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const k in a)e.setAttribute(k,a[k]);if(txt)e.textContent=txt;$('#gf').appendChild(e);return e}
+function gfBuild(){$('#gf').innerHTML='';
+Object.values(GL).forEach(([y,c,n,sub])=>{sg('line',{x1:150,x2:690,y1:y,y2:y,stroke:c,'stroke-opacity':.18,'stroke-width':3,'stroke-linecap':'round'});sg('text',{x:8,y:y-2,'font-size':13,'font-weight':700,fill:c},n);sg('text',{x:8,y:y+14,'font-size':10,fill:'var(--mut)'},sub)});
+const hide=e=>gsap.set(e,{strokeDasharray:1000,strokeDashoffset:1000});
+GLN.forEach(([a,b,l],i)=>hide(sg('path',{id:'gl'+i,d:gpath(a,b),stroke:GL[l][1],'stroke-width':3,fill:'none','stroke-linecap':'round'})));
+Object.entries(GP).forEach(([k,[a,b,l]])=>hide(sg('path',{id:'gp'+k,d:gpath(a,b),stroke:GL[l][1],'stroke-width':2.5,fill:'none','stroke-linecap':'round'})));
+Object.entries(GC).forEach(([k,[l,x,t]])=>{const y=GL[l][0];sg('circle',{id:'gc'+k,cx:x,cy:y,r:0,fill:'var(--bg)',stroke:GL[l][1],'stroke-width':3});gsap.set(sg('text',{id:'gt'+k,x,y:y-13,'text-anchor':'middle','font-size':10,fill:'var(--fg)'},t),{opacity:0})});
+sg('circle',{id:'gring',cx:600,cy:40,r:0,fill:'none',stroke:'#fa3600','stroke-width':3});sg('circle',{id:'gpk',cx:0,cy:0,r:0,fill:'#fa3600'})}
+const dr=id=>gsap.to(id,{strokeDashoffset:0,duration:d(.8)});
+const pp=k=>{gsap.fromTo('#gc'+k,{attr:{r:0}},{attr:{r:7},duration:d(.4),ease:'back.out(2)'});gsap.to('#gt'+k,{opacity:1,duration:d(.4)})};
+function mv(k){dr('#gp'+k);if(!gsap.version)return;const p=$('#gp'+k),pk=$('#gpk');let L;try{L=p.getTotalLength()}catch(e){return}const o={t:0};pk.setAttribute('r',5);gsap.to(o,{t:1,duration:d(.8),onUpdate:()=>{const q=p.getPointAtLength(o.t*L);pk.setAttribute('cx',q.x);pk.setAttribute('cy',q.y)},onComplete:()=>pk.setAttribute('r',0)})}
+const GS=[['main holds protected, production-ready code.',()=>pp('m0')],
+['develop branches from main as the integration branch.',()=>{mv('a');pp('d0')}],
+['feature/login branches from develop and the developer commits.',()=>{mv('b');pp('l0');gsap.delayedCall(d(.8),()=>{dr('#gl3');pp('l1')})}],
+['feature/payment branches from develop in parallel.',()=>{mv('c');pp('p0');gsap.delayedCall(d(.8),()=>{dr('#gl4');pp('p1')})}],
+['Login pull request: pytest and SonarQube pass, review approved, merged into develop.',()=>{mv('e');pp('d1');dr('#gl1')}],
+['Payment passes its own CI run and merges into develop.',()=>{mv('f');pp('d2');dr('#gl2')}],
+['Release: develop merges into main; approval gates the production deploy.',()=>{mv('g');pp('m1');dr('#gl0');gsap.fromTo('#gring',{attr:{r:7},opacity:1},{attr:{r:22},opacity:0,duration:d(.9)})}]];
+const GN=['main','develop','feature/login','feature/payment','merge login','merge payment','release to main'];
+function gfChips(n,run){$('#gfs').innerHTML=GN.map((x,j)=>`<span class="chip ${j<n?'ok':j===n&&run?'run':''}">${x}</span>`).join('')}
+function gfStep(){if(gf.i>=GS.length)return;const i=gf.i++;$('#gfcap').innerHTML=`<b>Step ${i+1} of ${GS.length}:</b> ${GS[i][0]}`;GS[i][1]();gfChips(i,true)}
+function gfReset(){if(gf.tl)gf.tl.kill();gf.tl=null;gf.i=0;gfBuild();gfChips(0,false);$('#gfcap').innerHTML='<b>Press Play flow to start.</b>'}
+function gfPlay(){if(gf.tl)return;if(gf.i>=GS.length)gfReset();const n=GS.length-gf.i;gf.tl=gsap.timeline();for(let k=0;k<n;k++)gf.tl.call(gfStep,null,k*2.2);gf.tl.call(()=>{gf.tl=null;gfChips(GS.length,false)},null,n*2.2-.4)}
+$('#gfplay').onclick=gfPlay;$('#gfpause').onclick=()=>gf.tl&&gf.tl.pause();$('#gfres').onclick=()=>gf.tl&&gf.tl.resume();$('#gfnext').onclick=()=>{if(!gf.tl)gfStep()};$('#gfrep').onclick=()=>{gfReset();gfPlay()};
+/* ---------- Modules ---------- */
+const MOD=[['Foundations','DevOps basics, Git branching strategy and the animated branch flow.',['fund','gitflow','git']],['Build and test','Unit tests, the CI/CD pipeline simulator and workflow YAML.',['test','sim','yaml']],['Deploy','GitOps, Argo CD and the three AWS accounts.',['gitops','env']],['Operate and prepare','Troubleshooting, interview questions and security practice.',['problems','iq','sec']]];
+let mi=0;
+function showMod(i,sc){i=Math.min(MOD.length-1,Math.max(0,i));mi=i;MOD.forEach((m,j)=>m[2].forEach(id=>{$('#'+id).hidden=j!==i}));$$('#nav a').forEach((a,j)=>a.classList.toggle('on',j===i));
+$('#mh').innerHTML=`<h3 style="margin:0">Module ${i+1} of ${MOD.length}: ${MOD[i][0]}</h3><p class="mut" style="margin:4px 0 0">${MOD[i][1]}</p>`;$('#mp').disabled=i===0;$('#mn').disabled=i===MOD.length-1;store.set('cicd-mod',i);
+if(sc)scrollTo({top:0,behavior:RM?'auto':'smooth'});if(window.ScrollTrigger)ScrollTrigger.refresh()}
+function modsInit(){const ft=$('footer'),mh=document.createElement('div'),mf=document.createElement('div');mh.id='mh';mf.id='mf';mh.style.cssText='max-width:1100px;margin:0 auto;padding:32px 20px 0';mf.style.cssText='max-width:1100px;margin:0 auto;padding:40px 20px 56px;display:flex;gap:12px;justify-content:space-between';
+mf.innerHTML='<button class="b" id="mp">Previous module</button><button class="b p" id="mn">Next module</button>';ft.before(mh);MOD.forEach(m=>m[2].forEach(id=>ft.before($('#'+id))));ft.before(mf);
+$('#nav').innerHTML=MOD.map((m,i)=>`<a href="#m${i+1}" data-mod="${i}">${i+1}. ${m[0]}</a>`).join('');
+$$('#nav a').forEach(a=>a.onclick=e=>{e.preventDefault();showMod(+a.dataset.mod,1)});$('#mp').onclick=()=>showMod(mi-1,1);$('#mn').onclick=()=>showMod(mi+1,1);showMod(+store.get('cicd-mod')||0)}
+function initializeApp(){paintStages();resetRun();Object.keys(ENV).forEach(paintEnv);gInit();yaml();plist();iqRender();gfReset();modsInit();slog('Ready. Choose a branch and press Start.')}
+initializeApp();
+</script></body></html>
